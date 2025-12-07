@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Scan Results - Web Security Health Analyzer</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 30px auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        background-color: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #333;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+      .url-display {
+        text-align: center;
+        color: #666;
+        margin-bottom: 30px;
+        word-break: break-all;
+      }
+      .result-section {
+        margin-bottom: 25px;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border-radius: 5px;
+        border-left: 4px solid #4caf50;
+      }
+      .result-section h2 {
+        margin-top: 0;
+        color: #333;
+        font-size: 18px;
+      }
+      .result-item {
+        margin: 10px 0;
+        padding: 8px;
+        background-color: white;
+        border-radius: 3px;
+      }
+      .label {
+        font-weight: bold;
+        color: #555;
+      }
+      .value {
+        color: #333;
+      }
+      .status-ok {
+        color: #4caf50;
+        font-weight: bold;
+      }
+      .status-warning {
+        color: #ff9800;
+        font-weight: bold;
+      }
+      .status-error {
+        color: #f44336;
+        font-weight: bold;
+      }
+      .header-check {
+        padding: 8px;
+        margin: 5px 0;
+        background-color: white;
+        border-radius: 3px;
+      }
+      .header-present {
+        border-left: 3px solid #4caf50;
+      }
+      .header-missing {
+        border-left: 3px solid #f44336;
+      }
+      .summary {
+        margin-top: 30px;
+        padding: 20px;
+        background-color: #e8f5e9;
+        border-radius: 5px;
+        text-align: center;
+      }
+      .summary h2 {
+        margin-top: 0;
+        color: #2e7d32;
+      }
+      .back-button {
+        display: block;
+        width: 200px;
+        margin: 20px auto 0;
+        padding: 12px;
+        text-align: center;
+        background-color: #2196f3;
+        color: white;
+        text-decoration: none;
+        border-radius: 4px;
+        font-weight: bold;
+      }
+      .back-button:hover {
+        background-color: #0b7dda;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Security Scan Results</h1>
+      <p class="url-display"><strong>URL:</strong> {{ url }}</p>
+
+      <!-- Reachability Status -->
+      <div class="result-section">
+        <h2>[1] Website Status</h2>
+        <div class="result-item">
+          <span class="label">Reachability:</span>
+          <span class="status-ok">REACHABLE</span>
+        </div>
+      </div>
+
+      <!-- HTTP Status Code -->
+      <div class="result-section">
+        <h2>[2] HTTP Status Code</h2>
+        <div class="result-item">
+          <span class="label">Status Code:</span>
+          <span class="value">{{ status_code }}</span>
+          {% if status_code >= 200 and status_code < 300 %}
+          <span class="status-ok">[OK]</span>
+          {% elif status_code >= 300 and status_code < 400 %}
+          <span class="status-warning">[REDIRECT]</span>
+          {% else %}
+          <span class="status-error">[ERROR]</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- HTTPS Check -->
+      <div class="result-section">
+        <h2>[3] HTTPS Encryption</h2>
+        <div class="result-item">
+          <span class="label">HTTPS Enabled:</span>
+          {% if uses_https %}
+          <span class="status-ok">YES</span>
+          {% else %}
+          <span class="status-error">NO</span>
+          {% endif %}
+        </div>
+        {% if not uses_https %}
+        <div class="result-item">
+          <span class="status-warning"
+            >⚠ WARNING: Connection is not encrypted!</span
+          >
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Response Time -->
+      <div class="result-section">
+        <h2>[4] Response Time</h2>
+        <div class="result-item">
+          <span class="label">Time:</span>
+          <span class="value">{{ response_time }} ms</span>
+          {% if response_time %} {% if response_time < 200 %}
+          <span class="status-ok">[Excellent]</span>
+          {% elif response_time < 500 %}
+          <span class="status-ok">[Good]</span>
+          {% elif response_time < 1000 %}
+          <span class="status-warning">[Moderate]</span>
+          {% else %}
+          <span class="status-warning">[Slow]</span>
+          {% endif %} {% endif %}
+        </div>
+      </div>
+
+      <!-- Security Headers -->
+      <div class="result-section">
+        <h2>[5] Security Headers</h2>
+
+        {% for header_name, header_value in security_headers.items() %}
+        <div
+          class="header-check {% if header_value %}header-present{% else %}header-missing{% endif %}"
+        >
+          <span class="label">{{ header_name }}:</span>
+          {% if header_value %}
+          <span class="status-ok">PRESENT</span>
+          <br />
+          <small style="color: #666"
+            >Value: {{ header_value[:80] }}{% if header_value|length > 80
+            %}...{% endif %}</small
+          >
+          {% else %}
+          <span class="status-error">MISSING</span>
+          {% endif %}
+        </div>
+        {% endfor %}
+
+        <div class="result-item" style="margin-top: 15px">
+          <span class="label">Headers Present:</span>
+          <span class="value">{{ headers_present }}/{{ total_headers }}</span>
+        </div>
+      </div>
+
+      <!-- Summary -->
+      <div class="summary">
+        <h2>Security Summary</h2>
+        <p>
+          <strong>HTTPS:</strong>
+          {% if uses_https %}
+          <span class="status-ok">Enabled</span>
+          {% else %}
+          <span class="status-error">Disabled</span>
+          {% endif %}
+        </p>
+        <p>
+          <strong>Security Headers:</strong> {{ headers_present }} out of {{
+          total_headers }} present
+        </p>
+
+        {% set score = (1 if uses_https else 0) + headers_present %} {% set
+        max_score = 4 %}
+        <p>
+          <strong>Basic Security Score:</strong> {{ score }}/{{ max_score }}
+        </p>
+
+        {% if score == max_score %}
+        <p class="status-ok">✓ Excellent security configuration!</p>
+        {% elif score >= 3 %}
+        <p class="status-ok">✓ Good security, some improvements possible</p>
+        {% elif score >= 2 %}
+        <p class="status-warning">⚠ Moderate security, improvements needed</p>
+        {% else %}
+        <p class="status-error">✗ Poor security configuration</p>
+        {% endif %}
+      </div>
+
+      <!-- Back Button -->
+      <a href="/" class="back-button">Scan Another Website</a>
+    </div>
+  </body>
+</html>
